@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { Song, RepeatMode } from '../types';
 
 interface PlayerState {
-  sound: Audio.Sound | null;
+  sound: any | null;
   currentSong: Song | null;
   queue: Song[];
   queueIndex: number;
@@ -22,7 +22,7 @@ interface PlayerState {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   updateDuration: (duration: number) => void;
-  _onPlaybackUpdate: (status: AVPlaybackStatus) => void;
+  _onPlaybackUpdate: (status: any) => void;
   _cleanup: () => Promise<void>;
 }
 
@@ -38,18 +38,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   repeat: 'none',
   isLoading: false,
 
-  _onPlaybackUpdate: (status: AVPlaybackStatus) => {
+  _onPlaybackUpdate: (status: any) => {
     if (!status.isLoaded) return;
     set({
-      isPlaying: status.isPlaying,
-      position: status.positionMillis ?? 0,
-      duration: status.durationMillis ?? 0,
+      isPlaying: status.playing,
+      position: Math.round((status.currentTime ?? 0) * 1000),
+      duration: Math.round((status.duration ?? 0) * 1000),
     });
 
     if (status.didJustFinish) {
       const { repeat } = get();
       if (repeat === 'one') {
-        get().seekTo(0).then(() => get().sound?.playAsync());
+        get().seekTo(0).then(() => get().sound?.play());
       } else {
         get().playNext();
       }
@@ -60,7 +60,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { sound } = get();
     if (sound) {
       try {
-        await sound.unloadAsync();
+        sound.remove();
       } catch {}
     }
     set({ sound: null });
@@ -71,20 +71,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     await get()._cleanup();
 
-    await Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: false,
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
     });
 
     try {
-      const { sound, status } = await Audio.Sound.createAsync(
-        { uri: song.uri },
-        { shouldPlay: true, progressUpdateIntervalMillis: 500 },
-        get()._onPlaybackUpdate
-      );
-
-      const dur = status.isLoaded ? (status.durationMillis ?? 0) : 0;
+      const sound = createAudioPlayer({ uri: song.uri }, { updateInterval: 500 });
+      sound.addListener('playbackStatusUpdate', get()._onPlaybackUpdate);
+      sound.setActiveForLockScreen(true, {
+        title: song.title,
+        artist: song.artist,
+        albumTitle: song.album,
+        artworkUrl: song.artwork,
+      });
+      sound.play();
 
       set({
         sound,
@@ -93,7 +95,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         queueIndex: index ?? get().queue.findIndex((s) => s.id === song.id),
         isPlaying: true,
         position: 0,
-        duration: dur,
+        duration: Math.round((sound.duration ?? 0) * 1000),
         isLoading: false,
       });
     } catch {
@@ -105,16 +107,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { sound, isPlaying } = get();
     if (!sound) return;
     if (isPlaying) {
-      await sound.pauseAsync();
+      sound.pause();
     } else {
-      await sound.playAsync();
+      sound.play();
     }
   },
 
   seekTo: async (positionMs) => {
     const { sound } = get();
     if (!sound) return;
-    await sound.setPositionAsync(positionMs);
+    await sound.seekTo(positionMs / 1000);
     set({ position: positionMs });
   },
 
