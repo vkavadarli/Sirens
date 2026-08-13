@@ -1,0 +1,16 @@
+export const colors = {
+  background: '#0A0A0A',
+  surface: '#181818',
+  surfaceHighlight: '#242424',
+  surfaceBorder: '#2A2A2A',
+  primary: '#E91E8C',
+  primaryDark: '#B01567',
+  primaryGlow: 'rgba(233, 30, 140, 0.15)',
+  text: '#FFFFFF',
+  textSecondary: '#B3B3B3',
+  textMuted: '#606060',
+  tabBar: '#111111',
+  miniPlayer: '#181818',
+  danger: '#E74C3C',
+  success: '#2ECC71',
+};
