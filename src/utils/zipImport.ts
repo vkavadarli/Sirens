@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 import { Song } from '../types';
 import { isAudioFile, parseFilename } from './formats';
@@ -42,7 +42,9 @@ export async function pickAndImportZip(
     }
   });
 
-  if (audioFiles.length === 0) return [];
+  if (audioFiles.length === 0) {
+    throw new Error('ZIP içinde desteklenen bir müzik dosyası bulunamadı.');
+  }
 
   const songs: Song[] = [];
 
@@ -77,13 +79,17 @@ export async function pickAndImportZip(
         addedAt: Date.now(),
         format: ext,
       });
-    } catch {
-      // Skip problematic files silently
+    } catch (error) {
+      throw new Error(`"${filename}" dosyası çıkarılamadı.`);
     }
   }
 
   // Cleanup cache
   try { await FileSystem.deleteAsync(asset.uri, { idempotent: true }); } catch {}
+
+  if (songs.length === 0) {
+    throw new Error('ZIP içindeki şarkılar uygulama depolamasına yazılamadı.');
+  }
 
   return songs;
 }

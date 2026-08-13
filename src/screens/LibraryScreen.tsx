@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, SafeAreaView, StatusBar,
+  TextInput, ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -41,7 +42,8 @@ export default function LibraryScreen() {
         Alert.alert('Tamamlandı', `${imported.length} şarkı eklendi.`);
       }
     } catch (e) {
-      Alert.alert('Hata', 'ZIP dosyası içe aktarılamadı.');
+      const message = e instanceof Error ? e.message : 'ZIP dosyası içe aktarılamadı.';
+      Alert.alert('İçe Aktarma Hatası', message);
     } finally {
       setImporting(false);
       setImportProgress('');
