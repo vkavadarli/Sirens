@@ -1,16 +1,34 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import JSZip from 'jszip';
+import { unzip, subscribe } from 'react-native-zip-archive';
 import { Song } from '../types';
 import { isAudioFile, parseFilename } from './formats';
 
 const MUSIC_DIR = FileSystem.documentDirectory + 'music/';
+const IMPORT_DIR = FileSystem.documentDirectory + 'imports/';
 
 export async function ensureMusicDir(): Promise<void> {
   const info = await FileSystem.getInfoAsync(MUSIC_DIR);
   if (!info.exists) {
     await FileSystem.makeDirectoryAsync(MUSIC_DIR, { intermediates: true });
   }
+}
+
+async function listAudioFiles(directoryUri: string): Promise<string[]> {
+  const entries = await FileSystem.readDirectoryAsync(directoryUri);
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const uri = directoryUri + entry;
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.isDirectory) {
+      files.push(...await listAudioFiles(uri + '/'));
+    } else if (isAudioFile(entry)) {
+      files.push(uri);
+    }
+  }
+
+  return files;
 }
 
 export async function pickAndImportZip(
@@ -25,46 +43,41 @@ export async function pickAndImportZip(
 
   const asset = result.assets[0];
   await ensureMusicDir();
+  const importId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const targetDirectory = IMPORT_DIR + importId + '/';
+  await FileSystem.makeDirectoryAsync(targetDirectory, { intermediates: true });
 
-  // Read zip as base64
-  const b64 = await FileSystem.readAsStringAsync(asset.uri, {
-    encoding: FileSystem.EncodingType.Base64,
+  // Native extraction is disk-to-disk: the archive is never expanded as Base64 in JS memory.
+  const progressSubscription = subscribe(({ progress }) => {
+    onProgress?.(Math.round(progress * 100), 100, 'Arşiv çıkarılıyor...');
   });
 
-  const zip = new JSZip();
-  await zip.loadAsync(b64, { base64: true });
+  try {
+    await unzip(asset.uri, targetDirectory, 'UTF-8');
+  } catch {
+    throw new Error('ZIP arşivi açılamadı. Bozuk veya şifreli bir ZIP olabilir.');
+  } finally {
+    progressSubscription.remove();
+  }
 
-  const audioFiles: Array<[string, JSZip.JSZipObject]> = [];
-  zip.forEach((relativePath, file) => {
-    if (!file.dir && isAudioFile(relativePath)) {
-      // Only top-level and direct subfolder files, strip leading dirs from name
-      audioFiles.push([relativePath, file]);
-    }
-  });
+  const audioFiles = await listAudioFiles(targetDirectory);
 
   if (audioFiles.length === 0) {
+    await FileSystem.deleteAsync(targetDirectory, { idempotent: true });
     throw new Error('ZIP içinde desteklenen bir müzik dosyası bulunamadı.');
   }
 
   const songs: Song[] = [];
 
   for (let i = 0; i < audioFiles.length; i++) {
-    const [relativePath, file] = audioFiles[i];
-    const filename = relativePath.split('/').pop() || relativePath;
+    const sourceUri = audioFiles[i];
+    const filename = sourceUri.split('/').pop() || `track-${i}`;
 
     onProgress?.(i + 1, audioFiles.length, filename);
 
     try {
-      const fileB64 = await file.async('base64');
-      const destUri = MUSIC_DIR + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-
-      // Skip if already exists
-      const existing = await FileSystem.getInfoAsync(destUri);
-      if (!existing.exists) {
-        await FileSystem.writeAsStringAsync(destUri, fileB64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      }
+      // Keep imported files in their native-extracted directory: no extra RAM-heavy copy.
+      const destUri = sourceUri;
 
       const ext = filename.split('.').pop()?.toLowerCase() || '';
       const { title, artist, album } = parseFilename(filename);
@@ -79,12 +92,12 @@ export async function pickAndImportZip(
         addedAt: Date.now(),
         format: ext,
       });
-    } catch (error) {
-      throw new Error(`"${filename}" dosyası çıkarılamadı.`);
+    } catch {
+      // Continue importing the remaining tracks if one archive entry is unreadable.
     }
   }
 
-  // Cleanup cache
+  // Cleanup only the temporary picked ZIP; extracted tracks remain in app storage.
   try { await FileSystem.deleteAsync(asset.uri, { idempotent: true }); } catch {}
 
   if (songs.length === 0) {
