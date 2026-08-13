@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./logo/logo.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
     "splash": {
       "image": "./logo/logo.png",
       "resizeMode": "contain",
