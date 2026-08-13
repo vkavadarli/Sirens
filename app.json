@@ -1,11 +1,12 @@
 {
   "expo": {
     "name": "Sirens",
-    "slug": "Sirens",
+    "slug": "sirens",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./logo/logo.png",
     "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
     "splash": {
       "image": "./logo/logo.png",
       "resizeMode": "contain",
@@ -23,7 +24,8 @@
       "package": "com.sirens.app",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
@@ -33,6 +35,12 @@
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3d60cdad-d901-430d-8b62-f183dc1eed09"
+      }
+    },
+    "owner": "vkavadarlis-team"
   }
 }

@@ -3,7 +3,6 @@ import {
   View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
   StatusBar, Dimensions, Image,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +10,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { colors } from '../utils/colors';
 import { formatDuration } from '../utils/formats';
+import ProgressSlider from '../components/ProgressSlider';
 
 const { width, height } = Dimensions.get('window');
 const ARTWORK_SIZE = width - 72;
@@ -96,7 +96,7 @@ export default function PlayerScreen() {
 
         {/* Progress bar */}
         <View style={styles.progressSection}>
-          <Slider
+          <ProgressSlider
             style={styles.slider}
             minimumValue={0}
             maximumValue={duration || 1}
