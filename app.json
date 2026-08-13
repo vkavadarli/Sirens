@@ -6,15 +6,13 @@
     "orientation": "portrait",
     "icon": "./logo/logo.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0A",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sirens.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0A0A0A"
-      },
+      "icon": "./logo/logo.png",
       "package": "com.sirens.app",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
@@ -32,7 +30,16 @@
         }
       ],
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0A",
+          "image": "./logo/logo.png",
+          "imageWidth": 220,
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "extra": {
       "eas": {
