@@ -11,6 +11,7 @@ import { useLibraryStore } from '../store/useLibraryStore';
 import { colors } from '../utils/colors';
 import PlaylistCard from '../components/PlaylistCard';
 import { RootStackParamList } from '../types';
+import { exportAndSharePlaylist } from '../utils/playlistExport';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -20,6 +21,7 @@ export default function PlaylistsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInput, setModalInput] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const openCreate = () => {
     setRenamingId(null);
@@ -51,15 +53,57 @@ export default function PlaylistsScreen() {
     ]);
   };
 
+  const exportPlaylist = async (playlistId: string) => {
+    const playlist = playlists.find((item) => item.id === playlistId);
+    if (!playlist) return;
+
+    const playlistSongs = playlist.songIds
+      .map((songId) => songs.find((song) => song.id === songId))
+      .filter((song): song is typeof songs[number] => Boolean(song));
+
+    setIsExporting(true);
+    try {
+      await exportAndSharePlaylist(playlist, playlistSongs);
+    } catch (error) {
+      Alert.alert('Dışa Aktarma Başarısız', error instanceof Error ? error.message : 'ZIP dosyası oluşturulamadı.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const openExport = () => {
+    if (playlists.length === 0) {
+      Alert.alert('Playlist Yok', 'Dışa aktarmak için önce bir playlist oluştur.');
+      return;
+    }
+
+    Alert.alert(
+      'Playlist Dışa Aktar',
+      'ZIP olarak hazırlamak ve paylaşmak istediğin playlisti seç.',
+      [
+        ...playlists.map((playlist) => ({
+          text: playlist.name,
+          onPress: () => exportPlaylist(playlist.id),
+        })),
+        { text: 'İptal', style: 'cancel' as const },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Playlistler</Text>
-        <TouchableOpacity onPress={openCreate} style={styles.addBtn}>
-          <Ionicons name="add-circle" size={28} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={openExport} disabled={isExporting} style={styles.addBtn}>
+            <Ionicons name="share-social-outline" size={25} color={isExporting ? colors.textMuted : colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={openCreate} style={styles.addBtn}>
+            <Ionicons name="add-circle" size={28} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {playlists.length === 0 ? (
@@ -151,6 +195,11 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     padding: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   list: {
     paddingTop: 8,

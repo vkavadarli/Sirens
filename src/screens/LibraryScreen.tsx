@@ -13,7 +13,7 @@ import SongItem from '../components/SongItem';
 import { Song } from '../types';
 
 export default function LibraryScreen() {
-  const { songs, playlists, loadLibrary, addSongs, removeSong, addSongToPlaylist } = useLibraryStore();
+  const { songs, playlists, loadLibrary, importSongsToPlaylist, removeSong, addSongToPlaylist } = useLibraryStore();
   const { playSong, currentSong } = usePlayerStore();
   const [search, setSearch] = useState('');
   const [importing, setImporting] = useState(false);
@@ -34,12 +34,17 @@ export default function LibraryScreen() {
   const handleImport = async () => {
     setImporting(true);
     try {
-      const imported = await pickAndImportZip((current, total, name) => {
+      const result = await pickAndImportZip((current, total, name) => {
         setImportProgress(`İçe aktarılıyor ${current}/${total}: ${name}`);
       });
-      if (imported.length > 0) {
-        await addSongs(imported);
-        Alert.alert('Tamamlandı', `${imported.length} şarkı eklendi.`);
+      if (result && result.songs.length > 0) {
+        const importedCount = await importSongsToPlaylist(result.songs, result.playlistName);
+        Alert.alert(
+          'Tamamlandı',
+          importedCount > 0
+            ? `${importedCount} şarkı eklendi ve "${result.playlistName}" playlistine yerleştirildi.`
+            : 'Bu ZIP içindeki şarkılar zaten kütüphanede bulunuyor.'
+        );
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'ZIP dosyası içe aktarılamadı.';

@@ -10,10 +10,12 @@ interface LibraryState {
 
   loadLibrary: () => Promise<void>;
   addSongs: (newSongs: Song[]) => Promise<void>;
+  importSongsToPlaylist: (newSongs: Song[], playlistName: string) => Promise<number>;
   removeSong: (id: string) => Promise<void>;
   updateSongDuration: (id: string, duration: number) => Promise<void>;
 
   createPlaylist: (name: string) => Promise<string>;
+  addSongsToNamedPlaylist: (name: string, songIds: string[]) => Promise<void>;
   deletePlaylist: (id: string) => Promise<void>;
   renamePlaylist: (id: string, name: string) => Promise<void>;
   addSongToPlaylist: (songId: string, playlistId: string) => Promise<void>;
@@ -38,6 +40,32 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const updated = [...songs, ...unique];
     set({ songs: updated });
     await saveSongs(updated);
+  },
+
+  importSongsToPlaylist: async (newSongs, playlistName) => {
+    const { songs, playlists } = get();
+    const existingUris = new Set(songs.map((song) => song.uri));
+    const newUniqueSongs = newSongs.filter((song) => !existingUris.has(song.uri));
+    const updatedSongs = [...songs, ...newUniqueSongs];
+    const normalizedName = playlistName.trim().toLocaleLowerCase('tr-TR');
+    const existingPlaylist = playlists.find((playlist) =>
+      playlist.name.trim().toLocaleLowerCase('tr-TR') === normalizedName
+    );
+    const newSongIds = newUniqueSongs.map((song) => song.id);
+    const updatedPlaylists = existingPlaylist
+      ? playlists.map((playlist) => playlist.id === existingPlaylist.id
+        ? { ...playlist, songIds: [...new Set([...playlist.songIds, ...newSongIds])] }
+        : playlist)
+      : [...playlists, {
+        id: Date.now().toString(),
+        name: playlistName.trim(),
+        songIds: newSongIds,
+        createdAt: Date.now(),
+      }];
+
+    set({ songs: updatedSongs, playlists: updatedPlaylists });
+    await Promise.all([saveSongs(updatedSongs), savePlaylists(updatedPlaylists)]);
+    return newUniqueSongs.length;
   },
 
   removeSong: async (id) => {

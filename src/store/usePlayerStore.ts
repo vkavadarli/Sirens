@@ -80,7 +80,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     await setAudioModeAsync({
       playsInSilentMode: true,
-      shouldPlayInBackground: false,
+      shouldPlayInBackground: true,
       interruptionMode: 'doNotMix',
     });
 
