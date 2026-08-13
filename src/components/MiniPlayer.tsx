@@ -5,6 +5,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { colors } from '../utils/colors';
 import { RootStackParamList } from '../types';
@@ -15,13 +16,14 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MiniPlayer() {
   const navigation = useNavigation<NavProp>();
+  const insets = useSafeAreaInsets();
   const { currentSong, isPlaying, togglePlay, playNext } = usePlayerStore();
 
   if (!currentSong) return null;
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, { bottom: insets.bottom + 68 }]}
       activeOpacity={0.9}
       onPress={() => navigation.navigate('Player')}
     >
@@ -58,7 +60,7 @@ export default function MiniPlayer() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 60, // above tab bar
+    // Bottom offset is applied dynamically for the Android system navigation bar and tab bar.
     left: 8,
     right: 8,
     height: 64,

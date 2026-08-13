@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { Song, RepeatMode } from '../types';
 
+let playbackRequestId = 0;
+
 interface PlayerState {
   sound: any | null;
   currentSong: Song | null;
@@ -60,46 +62,62 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { sound } = get();
     if (sound) {
       try {
+        sound.pause();
+        sound.clearLockScreenControls();
         sound.remove();
       } catch {}
     }
-    set({ sound: null });
+    set({ sound: null, isPlaying: false, position: 0, duration: 0 });
   },
 
   playSong: async (song, queue, index) => {
+    const requestId = ++playbackRequestId;
     set({ isLoading: true });
 
     await get()._cleanup();
 
+    if (requestId !== playbackRequestId) return;
+
     await setAudioModeAsync({
       playsInSilentMode: true,
-      shouldPlayInBackground: true,
+      shouldPlayInBackground: false,
       interruptionMode: 'doNotMix',
     });
 
+    if (requestId !== playbackRequestId) return;
+
     try {
       const sound = createAudioPlayer({ uri: song.uri }, { updateInterval: 500 });
-      sound.addListener('playbackStatusUpdate', get()._onPlaybackUpdate);
+      sound.addListener('playbackStatusUpdate', (status: any) => {
+        if (get().sound !== sound || requestId !== playbackRequestId) return;
+        get()._onPlaybackUpdate(status);
+      });
       sound.setActiveForLockScreen(true, {
         title: song.title,
         artist: song.artist,
         albumTitle: song.album,
         artworkUrl: song.artwork,
       });
-      sound.play();
+
+      if (requestId !== playbackRequestId) {
+        sound.pause();
+        sound.remove();
+        return;
+      }
 
       set({
         sound,
         currentSong: song,
         queue: queue ?? get().queue,
         queueIndex: index ?? get().queue.findIndex((s) => s.id === song.id),
-        isPlaying: true,
+        isPlaying: false,
         position: 0,
         duration: Math.round((sound.duration ?? 0) * 1000),
         isLoading: false,
       });
+      sound.play();
     } catch {
-      set({ isLoading: false });
+      if (requestId === playbackRequestId) set({ isLoading: false });
     }
   },
 
