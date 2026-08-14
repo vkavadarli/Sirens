@@ -1,5 +1,5 @@
 export const SUPPORTED_FORMATS = [
-  'mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'opus', 'wma', 'aiff', 'aif',
+  'mp3', 'mpeg', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'opus', 'wma', 'aiff', 'aif',
 ];
 
 export function isAudioFile(filename: string): boolean {

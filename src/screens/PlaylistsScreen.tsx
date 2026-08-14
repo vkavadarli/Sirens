@@ -71,25 +71,6 @@ export default function PlaylistsScreen() {
     }
   };
 
-  const openExport = () => {
-    if (playlists.length === 0) {
-      Alert.alert('Playlist Yok', 'Dışa aktarmak için önce bir playlist oluştur.');
-      return;
-    }
-
-    Alert.alert(
-      'Playlist Dışa Aktar',
-      'ZIP olarak hazırlamak ve paylaşmak istediğin playlisti seç.',
-      [
-        ...playlists.map((playlist) => ({
-          text: playlist.name,
-          onPress: () => exportPlaylist(playlist.id),
-        })),
-        { text: 'İptal', style: 'cancel' as const },
-      ]
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
@@ -97,9 +78,6 @@ export default function PlaylistsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Playlistler</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={openExport} disabled={isExporting} style={styles.addBtn}>
-            <Ionicons name="share-social-outline" size={25} color={isExporting ? colors.textMuted : colors.primary} />
-          </TouchableOpacity>
           <TouchableOpacity onPress={openCreate} style={styles.addBtn}>
             <Ionicons name="add-circle" size={28} color={colors.primary} />
           </TouchableOpacity>
@@ -127,6 +105,7 @@ export default function PlaylistsScreen() {
               onPress={() => navigation.navigate('PlaylistDetail', { playlistId: item.id })}
               onDelete={() => handleDelete(item.id, item.name)}
               onRename={() => openRename(item.id, item.name)}
+              onShare={() => exportPlaylist(item.id)}
             />
           )}
           contentContainerStyle={styles.list}

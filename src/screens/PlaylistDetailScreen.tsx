@@ -4,7 +4,7 @@ import {
   StatusBar, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -20,7 +20,12 @@ export default function PlaylistDetailScreen() {
   const { playlistId } = route.params;
 
   const { songs, playlists, removeSongFromPlaylist } = useLibraryStore();
-  const { playSong, currentSong } = usePlayerStore();
+  const { playSong, currentSong, setPersistentTabBarVisible } = usePlayerStore();
+
+  useFocusEffect(useCallback(() => {
+    setPersistentTabBarVisible(true);
+    return () => setPersistentTabBarVisible(false);
+  }, [setPersistentTabBarVisible]));
 
   const playlist = playlists.find((p) => p.id === playlistId);
   const playlistSongs = playlist

@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, Dimensions, Image,
+  StatusBar, Dimensions, Image, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -22,10 +22,28 @@ export default function PlayerScreen() {
     currentSong, isPlaying, position, duration,
     shuffle, repeat, isLoading,
     togglePlay, seekTo, playNext, playPrevious,
-    toggleShuffle, toggleRepeat, updateDuration,
+    toggleShuffle, toggleRepeat, updateDuration, setPlayerExpanded, setPersistentTabBarVisible,
   } = usePlayerStore();
 
   const { updateSongDuration } = useLibraryStore();
+
+  useFocusEffect(useCallback(() => {
+    setPlayerExpanded(true);
+    setPersistentTabBarVisible(true);
+    return () => {
+      setPlayerExpanded(false);
+      setPersistentTabBarVisible(false);
+    };
+  }, [setPlayerExpanded, setPersistentTabBarVisible]));
+
+  const swipeResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 12 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onPanResponderRelease: (_, gesture) => {
+      if (gesture.dy > 90 || gesture.vy > 0.8) {
+        navigation.goBack();
+      }
+    },
+  })).current;
 
   // Persist duration to library when we get it
   useEffect(() => {
@@ -54,7 +72,7 @@ export default function PlayerScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} {...swipeResponder.panHandlers}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={['#1a0a12', colors.background]}

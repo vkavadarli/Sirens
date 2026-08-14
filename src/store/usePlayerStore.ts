@@ -15,6 +15,8 @@ interface PlayerState {
   shuffle: boolean;
   repeat: RepeatMode;
   isLoading: boolean;
+  isPlayerExpanded: boolean;
+  isPersistentTabBarVisible: boolean;
 
   playSong: (song: Song, queue?: Song[], index?: number) => Promise<void>;
   togglePlay: () => Promise<void>;
@@ -24,6 +26,8 @@ interface PlayerState {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   updateDuration: (duration: number) => void;
+  setPlayerExpanded: (expanded: boolean) => void;
+  setPersistentTabBarVisible: (visible: boolean) => void;
   _onPlaybackUpdate: (status: any) => void;
   _cleanup: () => Promise<void>;
 }
@@ -39,6 +43,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   shuffle: false,
   repeat: 'none',
   isLoading: false,
+  isPlayerExpanded: false,
+  isPersistentTabBarVisible: false,
 
   _onPlaybackUpdate: (status: any) => {
     if (!status.isLoaded) return;
@@ -57,6 +63,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
     }
   },
+
+  setPlayerExpanded: (isPlayerExpanded) => set({ isPlayerExpanded }),
+
+  setPersistentTabBarVisible: (isPersistentTabBarVisible) => set({ isPersistentTabBarVisible }),
 
   _cleanup: async () => {
     const { sound } = get();

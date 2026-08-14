@@ -2,8 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { createNavigationContainerRef } from '@react-navigation/native';
 
 import { RootStackParamList, MainTabParamList } from '../types';
 import { colors } from '../utils/colors';
@@ -18,6 +19,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
@@ -49,8 +51,37 @@ function MainTabs() {
   );
 }
 
+function PersistentTabBar() {
+  const insets = useSafeAreaInsets();
+  const isVisible = usePlayerStore((state) => state.isPersistentTabBarVisible);
+
+  if (!isVisible) return null;
+
+  const tabs: Array<{ name: keyof MainTabParamList; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+    { name: 'Library', label: 'Kütüphane', icon: 'musical-notes' },
+    { name: 'Playlists', label: 'Playlistler', icon: 'list' },
+    { name: 'Search', label: 'Ara', icon: 'search' },
+  ];
+
+  return (
+    <View style={[styles.persistentTabBar, { height: 60 + insets.bottom, paddingBottom: insets.bottom + 8 }]}>
+      {tabs.map((tab) => (
+        <TouchableOpacity
+          key={tab.name}
+          style={styles.persistentTab}
+          onPress={() => navigationRef.navigate('Main', { screen: tab.name } as never)}
+        >
+          <Ionicons name={tab.icon} size={22} color={colors.textMuted} />
+          <Text style={styles.persistentTabLabel}>{tab.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
 export default function AppNavigator() {
   const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlayerExpanded = usePlayerStore((s) => s.isPlayerExpanded);
 
   return (
     <View style={styles.container}>
@@ -67,7 +98,8 @@ export default function AppNavigator() {
           options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>
-      {currentSong && <MiniPlayer />}
+      <PersistentTabBar />
+      {currentSong && !isPlayerExpanded && <MiniPlayer />}
     </View>
   );
 }
@@ -86,6 +118,28 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  persistentTabBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    backgroundColor: colors.tabBar,
+    borderTopColor: colors.surfaceBorder,
+    borderTopWidth: 1,
+    paddingTop: 4,
+  },
+  persistentTab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  persistentTabLabel: {
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: '600',
   },

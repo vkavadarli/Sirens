@@ -12,9 +12,10 @@ interface Props {
   onPress: () => void;
   onDelete: () => void;
   onRename: () => void;
+  onShare: () => void;
 }
 
-export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRename }: Props) {
+export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRename, onShare }: Props) {
   const count = playlist.songIds.length;
 
   const handleMenu = () => {
@@ -34,9 +35,14 @@ export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRen
         <Text style={styles.name} numberOfLines={1}>{playlist.name}</Text>
         <Text style={styles.count}>{count} şarkı</Text>
       </View>
-      <TouchableOpacity onPress={handleMenu} hitSlop={8}>
-        <Ionicons name="ellipsis-vertical" size={20} color={colors.textMuted} />
-      </TouchableOpacity>
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={onShare} hitSlop={8} style={styles.actionButton}>
+          <Ionicons name="share-social-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleMenu} hitSlop={8} style={styles.actionButton}>
+          <Ionicons name="ellipsis-vertical" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -77,5 +83,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     marginTop: 3,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 4,
   },
 });

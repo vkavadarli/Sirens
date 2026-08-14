@@ -13,7 +13,7 @@ import SongItem from '../components/SongItem';
 import { Song } from '../types';
 
 export default function LibraryScreen() {
-  const { songs, playlists, loadLibrary, importSongsToPlaylist, removeSong, addSongToPlaylist } = useLibraryStore();
+  const { songs, playlists, loadLibrary, importSongsToPlaylist, addSongToPlaylist } = useLibraryStore();
   const { playSong, currentSong } = usePlayerStore();
   const [search, setSearch] = useState('');
   const [importing, setImporting] = useState(false);
@@ -61,17 +61,6 @@ export default function LibraryScreen() {
     },
     [filtered]
   );
-
-  const handleRemove = (song: Song) => {
-    Alert.alert(
-      'Şarkıyı Sil',
-      `"${song.title}" kütüphaneden silinsin mi?`,
-      [
-        { text: 'İptal', style: 'cancel' },
-        { text: 'Sil', style: 'destructive', onPress: () => removeSong(song.id) },
-      ]
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -149,7 +138,6 @@ export default function LibraryScreen() {
             <SongItem
               song={item}
               onPress={() => handlePlay(item, index)}
-              onRemove={() => handleRemove(item)}
               playlists={playlists}
               onAddToPlaylist={(pid) => addSongToPlaylist(item.id, pid)}
               showMenu

@@ -17,9 +17,9 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 export default function MiniPlayer() {
   const navigation = useNavigation<NavProp>();
   const insets = useSafeAreaInsets();
-  const { currentSong, isPlaying, togglePlay, playNext } = usePlayerStore();
+  const { currentSong, isPlaying, togglePlay, playNext, isPlayerExpanded } = usePlayerStore();
 
-  if (!currentSong) return null;
+  if (!currentSong || isPlayerExpanded) return null;
 
   return (
     <TouchableOpacity

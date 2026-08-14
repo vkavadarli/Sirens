@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity, Image, StyleSheet, Alert,
 } from 'react-native';
@@ -28,24 +28,31 @@ export default function SongItem({
   onAddToPlaylist,
   isActive,
 }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   const handleMenu = () => {
-    const options = ['Kaldır'];
-    if (playlists && playlists.length > 0) {
-      playlists.forEach((p) => options.push(`"${p.name}" playlistine ekle`));
+    if (playlists) {
+      Alert.alert(song.title, undefined, [
+        { text: 'Listeye Ekle', onPress: openPlaylistPicker },
+        { text: 'İptal', style: 'cancel' },
+      ]);
+      return;
     }
-    options.push('İptal');
 
     Alert.alert(song.title, undefined, [
-      {
-        text: 'Kütüphaneden Sil',
-        style: 'destructive',
-        onPress: () => onRemove?.(),
-      },
-      ...(playlists ?? []).map((p) => ({
-        text: `"${p.name}" listesine ekle`,
-        onPress: () => onAddToPlaylist?.(p.id),
+      { text: 'Listeden Çıkar', style: 'destructive', onPress: () => onRemove?.() },
+      { text: 'İptal', style: 'cancel' },
+    ]);
+  };
+
+  const openPlaylistPicker = () => {
+    if (!playlists?.length) {
+      Alert.alert('Playlist Yok', 'Önce bir playlist oluşturmalısın.');
+      return;
+    }
+
+    Alert.alert(song.title, 'Eklenecek playlisti seç.', [
+      ...playlists.map((playlist) => ({
+        text: playlist.name,
+        onPress: () => onAddToPlaylist?.(playlist.id),
       })),
       { text: 'İptal', style: 'cancel' },
     ]);
