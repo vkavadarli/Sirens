@@ -9,7 +9,7 @@ const IMPORT_DIR = FileSystem.documentDirectory + 'imports/';
 
 export interface ZipImportResult {
   songs: Song[];
-  playlistName: string;
+  playlistName?: string;
 }
 
 export async function ensureMusicDir(): Promise<void> {
@@ -36,17 +36,44 @@ async function listAudioFiles(directoryUri: string): Promise<string[]> {
   return files;
 }
 
-export async function pickAndImportZip(
+export async function pickAndImportMusic(
   onProgress?: (current: number, total: number, name: string) => void
 ): Promise<ZipImportResult | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
+    type: ['application/zip', 'application/x-zip-compressed', 'audio/*'],
     copyToCacheDirectory: true,
   });
 
   if (result.canceled || !result.assets?.[0]) return null;
 
   const asset = result.assets[0];
+  if (!asset.name.toLowerCase().endsWith('.zip')) {
+    if (!isAudioFile(asset.name)) {
+      throw new Error('Desteklenen bir müzik dosyası seçmelisin.');
+    }
+
+    await ensureMusicDir();
+    const extension = asset.name.split('.').pop()?.toLowerCase() ?? 'mp3';
+    const destinationUri = MUSIC_DIR + `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+    onProgress?.(0, 1, asset.name);
+    await FileSystem.copyAsync({ from: asset.uri, to: destinationUri });
+    try { await FileSystem.deleteAsync(asset.uri, { idempotent: true }); } catch {}
+    const { title, artist, album } = parseFilename(asset.name);
+
+    return {
+      songs: [{
+        id: `${Date.now()}_0`,
+        title,
+        artist,
+        album,
+        duration: 0,
+        uri: destinationUri,
+        addedAt: Date.now(),
+        format: extension,
+      }],
+    };
+  }
+
   const playlistName = asset.name.replace(/\.zip$/i, '').trim() || 'İçe Aktarılanlar';
   await ensureMusicDir();
   const importId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

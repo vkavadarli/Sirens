@@ -7,13 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { pickAndImportZip } from '../utils/zipImport';
+import { pickAndImportMusic } from '../utils/zipImport';
 import { colors } from '../utils/colors';
 import SongItem from '../components/SongItem';
 import { Song } from '../types';
 
 export default function LibraryScreen() {
-  const { songs, playlists, loadLibrary, importSongsToPlaylist, removeSong, addSongToPlaylist } = useLibraryStore();
+  const { songs, playlists, loadLibrary, addSongs, importSongsToPlaylist, removeSong, addSongToPlaylist } = useLibraryStore();
   const { playSong, currentSong } = usePlayerStore();
   const [search, setSearch] = useState('');
   const [importing, setImporting] = useState(false);
@@ -34,10 +34,16 @@ export default function LibraryScreen() {
   const handleImport = async () => {
     setImporting(true);
     try {
-      const result = await pickAndImportZip((current, total, name) => {
+      const result = await pickAndImportMusic((current, total, name) => {
         setImportProgress(`İçe aktarılıyor ${current}/${total}: ${name}`);
       });
       if (result && result.songs.length > 0) {
+        if (!result.playlistName) {
+          await addSongs(result.songs);
+          Alert.alert('Tamamlandı', 'Şarkı kütüphaneye eklendi.');
+          return;
+        }
+
         const importedCount = await importSongsToPlaylist(result.songs, result.playlistName);
         Alert.alert(
           'Tamamlandı',
@@ -135,7 +141,7 @@ export default function LibraryScreen() {
         <View style={styles.empty}>
           <Ionicons name="musical-notes-outline" size={64} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>Kütüphane Boş</Text>
-          <Text style={styles.emptyText}>Müzik eklemek için sağ üstteki + butonuna bas ve ZIP dosyası seç.</Text>
+          <Text style={styles.emptyText}>Müzik eklemek için sağ üstteki + butonuna bas ve bir ZIP veya şarkı dosyası seç.</Text>
         </View>
       ) : (
         <FlatList
