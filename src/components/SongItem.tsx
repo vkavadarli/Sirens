@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, StyleSheet, Alert, FlatList, Modal,
+  View, Text, TouchableOpacity, Image, StyleSheet, Alert, FlatList, Modal, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Song, Playlist } from '../types';
 import { colors } from '../utils/colors';
 import { formatDuration } from '../utils/formats';
+import { usePlayerStore } from '../store/usePlayerStore';
 
 interface Props {
   song: Song;
@@ -28,22 +29,12 @@ export default function SongItem({
   onAddToPlaylist,
   isActive,
 }: Props) {
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isPlaylistPickerVisible, setIsPlaylistPickerVisible] = useState(false);
+  const enqueueNext = usePlayerStore((state) => state.enqueueNext);
 
   const handleMenu = () => {
-    if (playlists) {
-      Alert.alert(song.title, undefined, [
-        { text: 'Listeye Ekle', onPress: openPlaylistPicker },
-        ...(onRemove ? [{ text: 'Kütüphaneden Sil', style: 'destructive' as const, onPress: onRemove }] : []),
-        { text: 'İptal', style: 'cancel' },
-      ]);
-      return;
-    }
-
-    Alert.alert(song.title, undefined, [
-      { text: 'Listeden Çıkar', style: 'destructive', onPress: () => onRemove?.() },
-      { text: 'İptal', style: 'cancel' },
-    ]);
+    setIsMenuVisible(true);
   };
 
   const openPlaylistPicker = () => {
@@ -58,6 +49,16 @@ export default function SongItem({
   const addToPlaylist = (playlistId: string) => {
     setIsPlaylistPickerVisible(false);
     onAddToPlaylist?.(playlistId);
+  };
+
+  const addToQueue = () => {
+    setIsMenuVisible(false);
+    enqueueNext(song);
+  };
+
+  const removeSong = () => {
+    setIsMenuVisible(false);
+    onRemove?.();
   };
 
   return (
@@ -106,13 +107,51 @@ export default function SongItem({
       </TouchableOpacity>
 
       <Modal
+        visible={isMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsMenuVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setIsMenuVisible(false)}>
+          <Pressable style={styles.actionMenu} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.modalTitle} numberOfLines={1}>{song.title}</Text>
+            <TouchableOpacity style={styles.actionOption} onPress={addToQueue}>
+              <Ionicons name="list-outline" size={19} color={colors.text} />
+              <Text style={styles.actionOptionText}>Sıraya Ekle</Text>
+            </TouchableOpacity>
+            {playlists && (
+              <TouchableOpacity
+                style={styles.actionOption}
+                onPress={() => {
+                  setIsMenuVisible(false);
+                  openPlaylistPicker();
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={19} color={colors.text} />
+                <Text style={styles.actionOptionText}>Listeye Ekle</Text>
+              </TouchableOpacity>
+            )}
+            {onRemove && (
+              <TouchableOpacity style={styles.actionOption} onPress={removeSong}>
+                <Ionicons name="trash-outline" size={19} color={colors.error} />
+                <Text style={styles.destructiveOptionText}>{playlists ? 'Kütüphaneden Sil' : 'Listeden Çıkar'}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setIsMenuVisible(false)}>
+              <Text style={styles.cancelButtonText}>İptal</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
         visible={isPlaylistPickerVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setIsPlaylistPickerVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+        <Pressable style={styles.modalOverlay} onPress={() => setIsPlaylistPickerVisible(false)}>
+          <Pressable style={styles.modalBox} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.modalTitle}>Listeye Ekle</Text>
             <Text style={styles.modalSubtitle} numberOfLines={1}>{song.title}</Text>
             <FlatList
@@ -135,8 +174,8 @@ export default function SongItem({
             >
               <Text style={styles.cancelButtonText}>İptal</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -218,6 +257,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },
+  actionMenu: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+  },
   modalTitle: {
     color: colors.text,
     fontSize: 18,
@@ -240,6 +287,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.surfaceBorder,
+  },
+  actionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceBorder,
+  },
+  actionOptionText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  destructiveOptionText: {
+    color: colors.error,
+    fontSize: 15,
+    fontWeight: '600',
   },
   playlistOptionText: {
     flex: 1,

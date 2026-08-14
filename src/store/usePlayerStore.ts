@@ -20,6 +20,7 @@ interface PlayerState {
   isPersistentTabBarVisible: boolean;
 
   playSong: (song: Song, queue?: Song[], index?: number, playlistId?: string | null) => Promise<void>;
+  enqueueNext: (song: Song) => Promise<void>;
   togglePlay: () => Promise<void>;
   seekTo: (positionMs: number) => Promise<void>;
   playNext: () => Promise<void>;
@@ -132,6 +133,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch {
       if (requestId === playbackRequestId) set({ isLoading: false });
     }
+  },
+
+  enqueueNext: async (song) => {
+    const { currentSong, queue, queueIndex } = get();
+    if (!currentSong) {
+      await get().playSong(song, [song], 0);
+      return;
+    }
+
+    const updatedQueue = [...queue];
+    updatedQueue.splice(queueIndex + 1, 0, song);
+    set({ queue: updatedQueue });
   },
 
   togglePlay: async () => {

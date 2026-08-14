@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  StatusBar, Alert, TextInput, Modal,
+  StatusBar, Alert, TextInput, Modal, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -122,8 +122,8 @@ export default function PlaylistsScreen() {
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalBox} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.modalTitle}>
               {renamingId ? 'Playlist Yeniden Adlandır' : 'Yeni Playlist'}
             </Text>
@@ -150,8 +150,8 @@ export default function PlaylistsScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
