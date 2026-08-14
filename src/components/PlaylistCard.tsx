@@ -13,9 +13,10 @@ interface Props {
   onDelete: () => void;
   onRename: () => void;
   onShare: () => void;
+  isActive?: boolean;
 }
 
-export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRename, onShare }: Props) {
+export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRename, onShare, isActive }: Props) {
   const count = playlist.songIds.length;
 
   const handleMenu = () => {
@@ -29,11 +30,11 @@ export default function PlaylistCard({ playlist, songs, onPress, onDelete, onRen
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.iconBox}>
-        <Ionicons name="musical-notes" size={28} color={colors.primary} />
+        <Ionicons name={isActive ? 'volume-high' : 'musical-notes'} size={28} color={colors.primary} />
       </View>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{playlist.name}</Text>
-        <Text style={styles.count}>{count} şarkı</Text>
+        <Text style={[styles.count, isActive && styles.activeCount]}>{isActive ? 'Şimdi çalıyor' : `${count} şarkı`}</Text>
       </View>
       <View style={styles.actions}>
         <TouchableOpacity onPress={onShare} hitSlop={8} style={styles.actionButton}>
@@ -83,6 +84,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     marginTop: 3,
+  },
+  activeCount: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   actions: {
     flexDirection: 'row',

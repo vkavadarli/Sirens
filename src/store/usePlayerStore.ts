@@ -9,6 +9,7 @@ interface PlayerState {
   currentSong: Song | null;
   queue: Song[];
   queueIndex: number;
+  activePlaylistId: string | null;
   isPlaying: boolean;
   position: number; // ms
   duration: number; // ms
@@ -18,7 +19,7 @@ interface PlayerState {
   isPlayerExpanded: boolean;
   isPersistentTabBarVisible: boolean;
 
-  playSong: (song: Song, queue?: Song[], index?: number) => Promise<void>;
+  playSong: (song: Song, queue?: Song[], index?: number, playlistId?: string | null) => Promise<void>;
   togglePlay: () => Promise<void>;
   seekTo: (positionMs: number) => Promise<void>;
   playNext: () => Promise<void>;
@@ -37,6 +38,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentSong: null,
   queue: [],
   queueIndex: 0,
+  activePlaylistId: null,
   isPlaying: false,
   position: 0,
   duration: 0,
@@ -80,7 +82,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ sound: null, isPlaying: false, position: 0, duration: 0 });
   },
 
-  playSong: async (song, queue, index) => {
+  playSong: async (song, queue, index, playlistId = null) => {
     const requestId = ++playbackRequestId;
     set({ isLoading: true });
 
@@ -120,6 +122,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         currentSong: song,
         queue: queue ?? get().queue,
         queueIndex: index ?? get().queue.findIndex((s) => s.id === song.id),
+        activePlaylistId: playlistId,
         isPlaying: false,
         position: 0,
         duration: Math.round((sound.duration ?? 0) * 1000),
@@ -132,11 +135,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   togglePlay: async () => {
-    const { sound, isPlaying } = get();
+    const { sound, isPlaying, position, duration } = get();
     if (!sound) return;
     if (isPlaying) {
       sound.pause();
     } else {
+      if (duration > 0 && position >= duration - 250) {
+        await sound.seekTo(0);
+        set({ position: 0 });
+      }
       sound.play();
     }
   },
@@ -149,7 +156,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   playNext: async () => {
-    const { queue, queueIndex, repeat, shuffle } = get();
+    const { queue, queueIndex, repeat, shuffle, activePlaylistId } = get();
     if (queue.length === 0) return;
 
     let nextIndex: number;
@@ -166,11 +173,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
     }
     const nextSong = queue[nextIndex];
-    await get().playSong(nextSong, queue, nextIndex);
+    await get().playSong(nextSong, queue, nextIndex, activePlaylistId);
   },
 
   playPrevious: async () => {
-    const { queue, queueIndex, position } = get();
+    const { queue, queueIndex, position, activePlaylistId } = get();
     if (queue.length === 0) return;
 
     // If more than 3s in, restart current song
@@ -180,7 +187,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     const prevIndex = queueIndex > 0 ? queueIndex - 1 : queue.length - 1;
-    await get().playSong(queue[prevIndex], queue, prevIndex);
+    await get().playSong(queue[prevIndex], queue, prevIndex, activePlaylistId);
   },
 
   toggleShuffle: () => set((s) => ({ shuffle: !s.shuffle })),

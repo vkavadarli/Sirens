@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createNavigationContainerRef } from '@react-navigation/native';
 
@@ -20,6 +20,23 @@ import { usePlayerStore } from '../store/usePlayerStore';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+function TabSwipeContainer({ children, navigation }: { children: ReactNode; navigation: any }) {
+  const responder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) =>
+      Math.abs(gesture.dx) > 14 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+    onPanResponderRelease: (_, gesture) => {
+      if (Math.abs(gesture.dx) < 70 || Math.abs(gesture.dx) < Math.abs(gesture.dy)) return;
+
+      const state = navigation.getState();
+      const nextIndex = gesture.dx < 0 ? state.index + 1 : state.index - 1;
+      const nextRoute = state.routes[nextIndex];
+      if (nextRoute) navigation.navigate(nextRoute.name);
+    },
+  })).current;
+
+  return <View style={styles.container} {...responder.panHandlers}>{children}</View>;
+}
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
@@ -43,9 +60,15 @@ function MainTabs() {
           },
         })}
       >
-        <Tab.Screen name="Library" component={LibraryScreen} />
-        <Tab.Screen name="Playlists" component={PlaylistsScreen} />
-        <Tab.Screen name="Search" component={SearchScreen} />
+        <Tab.Screen name="Library">
+          {(props) => <TabSwipeContainer navigation={props.navigation}><LibraryScreen /></TabSwipeContainer>}
+        </Tab.Screen>
+        <Tab.Screen name="Playlists">
+          {(props) => <TabSwipeContainer navigation={props.navigation}><PlaylistsScreen /></TabSwipeContainer>}
+        </Tab.Screen>
+        <Tab.Screen name="Search">
+          {(props) => <TabSwipeContainer navigation={props.navigation}><SearchScreen /></TabSwipeContainer>}
+        </Tab.Screen>
       </Tab.Navigator>
     </View>
   );

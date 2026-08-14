@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, StyleSheet, Alert,
+  View, Text, TouchableOpacity, Image, StyleSheet, Alert, FlatList, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Song, Playlist } from '../types';
@@ -28,10 +28,13 @@ export default function SongItem({
   onAddToPlaylist,
   isActive,
 }: Props) {
+  const [isPlaylistPickerVisible, setIsPlaylistPickerVisible] = useState(false);
+
   const handleMenu = () => {
     if (playlists) {
       Alert.alert(song.title, undefined, [
         { text: 'Listeye Ekle', onPress: openPlaylistPicker },
+        ...(onRemove ? [{ text: 'Kütüphaneden Sil', style: 'destructive' as const, onPress: onRemove }] : []),
         { text: 'İptal', style: 'cancel' },
       ]);
       return;
@@ -49,22 +52,22 @@ export default function SongItem({
       return;
     }
 
-    Alert.alert(song.title, 'Eklenecek playlisti seç.', [
-      ...playlists.map((playlist) => ({
-        text: playlist.name,
-        onPress: () => onAddToPlaylist?.(playlist.id),
-      })),
-      { text: 'İptal', style: 'cancel' },
-    ]);
+    setIsPlaylistPickerVisible(true);
+  };
+
+  const addToPlaylist = (playlistId: string) => {
+    setIsPlaylistPickerVisible(false);
+    onAddToPlaylist?.(playlistId);
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.container, isActive && styles.active]}
-      onPress={onPress}
-      onLongPress={onLongPress ?? handleMenu}
-      activeOpacity={0.7}
-    >
+    <>
+      <TouchableOpacity
+        style={[styles.container, isActive && styles.active]}
+        onPress={onPress}
+        onLongPress={onLongPress ?? handleMenu}
+        activeOpacity={0.7}
+      >
       <View style={styles.artworkContainer}>
         {song.artwork ? (
           <Image source={{ uri: song.artwork }} style={styles.artwork} />
@@ -100,7 +103,42 @@ export default function SongItem({
           </TouchableOpacity>
         )}
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <Modal
+        visible={isPlaylistPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPlaylistPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Listeye Ekle</Text>
+            <Text style={styles.modalSubtitle} numberOfLines={1}>{song.title}</Text>
+            <FlatList
+              data={playlists}
+              keyExtractor={(playlist) => playlist.id}
+              renderItem={({ item: playlist }) => (
+                <TouchableOpacity
+                  style={styles.playlistOption}
+                  onPress={() => addToPlaylist(playlist.id)}
+                >
+                  <Ionicons name="list" size={18} color={colors.primary} />
+                  <Text style={styles.playlistOptionText} numberOfLines={1}>{playlist.name}</Text>
+                </TouchableOpacity>
+              )}
+              style={styles.playlistList}
+            />
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setIsPlaylistPickerVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>İptal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -163,5 +201,62 @@ const styles = StyleSheet.create({
   },
   menuBtn: {
     padding: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalBox: {
+    width: '100%',
+    maxHeight: '70%',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  playlistList: {
+    flexGrow: 0,
+  },
+  playlistOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceBorder,
+  },
+  playlistOptionText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 12,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

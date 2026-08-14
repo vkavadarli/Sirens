@@ -19,13 +19,14 @@ const ARTWORK_SIZE = width - 72;
 export default function PlayerScreen() {
   const navigation = useNavigation();
   const {
-    currentSong, isPlaying, position, duration,
+    currentSong, isPlaying, position, duration, activePlaylistId,
     shuffle, repeat, isLoading,
     togglePlay, seekTo, playNext, playPrevious,
     toggleShuffle, toggleRepeat, updateDuration, setPlayerExpanded, setPersistentTabBarVisible,
   } = usePlayerStore();
 
-  const { updateSongDuration } = useLibraryStore();
+  const { updateSongDuration, playlists } = useLibraryStore();
+  const activePlaylist = playlists.find((playlist) => playlist.id === activePlaylistId);
 
   useFocusEffect(useCallback(() => {
     setPlayerExpanded(true);
@@ -90,7 +91,7 @@ export default function PlayerScreen() {
           <View style={styles.topCenter}>
             <Text style={styles.topLabel}>ÇALIYOR</Text>
             <Text style={styles.topPlaylist} numberOfLines={1}>
-              {currentSong.album !== 'Unknown Album' ? currentSong.album : 'Kütüphane'}
+              {activePlaylist?.name ?? 'Kütüphane'}
             </Text>
           </View>
           <View style={{ width: 28 }} />

@@ -13,6 +13,10 @@
     },
     "android": {
       "icon": "./logo/logo.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./logo/logo.png",
+        "backgroundColor": "#0A0A0A"
+      },
       "package": "com.sirens.app",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
@@ -36,7 +40,7 @@
         {
           "backgroundColor": "#0A0A0A",
           "image": "./logo/logo.png",
-          "imageWidth": 220,
+              "imageWidth": 170,
           "resizeMode": "contain"
         }
       ],

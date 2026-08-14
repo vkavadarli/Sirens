@@ -12,12 +12,14 @@ import { colors } from '../utils/colors';
 import PlaylistCard from '../components/PlaylistCard';
 import { RootStackParamList } from '../types';
 import { exportAndSharePlaylist } from '../utils/playlistExport';
+import { usePlayerStore } from '../store/usePlayerStore';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function PlaylistsScreen() {
   const navigation = useNavigation<NavProp>();
   const { playlists, songs, createPlaylist, deletePlaylist, renamePlaylist } = useLibraryStore();
+  const activePlaylistId = usePlayerStore((state) => state.activePlaylistId);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInput, setModalInput] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -106,6 +108,7 @@ export default function PlaylistsScreen() {
               onDelete={() => handleDelete(item.id, item.name)}
               onRename={() => openRename(item.id, item.name)}
               onShare={() => exportPlaylist(item.id)}
+              isActive={item.id === activePlaylistId}
             />
           )}
           contentContainerStyle={styles.list}

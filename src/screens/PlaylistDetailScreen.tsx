@@ -34,7 +34,7 @@ export default function PlaylistDetailScreen() {
 
   const handlePlay = useCallback(
     (song: Song, index: number) => {
-      playSong(song, playlistSongs, index);
+      playSong(song, playlistSongs, index, playlistId);
     },
     [playlistSongs]
   );
@@ -89,7 +89,7 @@ export default function PlaylistDetailScreen() {
         <View style={styles.controls}>
           <TouchableOpacity
             style={styles.playBtn}
-            onPress={() => playSong(playlistSongs[0], playlistSongs, 0)}
+            onPress={() => playSong(playlistSongs[0], playlistSongs, 0, playlistId)}
           >
             <Ionicons name="play" size={18} color="#000" />
             <Text style={styles.playBtnText}>Oynat</Text>
@@ -98,7 +98,7 @@ export default function PlaylistDetailScreen() {
             style={styles.shuffleBtn}
             onPress={() => {
               const idx = Math.floor(Math.random() * playlistSongs.length);
-              playSong(playlistSongs[idx], playlistSongs, idx);
+              playSong(playlistSongs[idx], playlistSongs, idx, playlistId);
             }}
           >
             <Ionicons name="shuffle" size={18} color={colors.primary} />
